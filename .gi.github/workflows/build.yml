@@ -1,0 +1,51 @@
+
+name: Build AI SMP Mod
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '**.zip'
+      - '.github/workflows/build.yml'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Extract mod project
+        run: |
+          mkdir project
+          ZIP=$(find . -maxdepth 1 -iname '*.zip' | head -n 1)
+          if [ -z "$ZIP" ]; then
+            echo "No ZIP file found!"
+            exit 1
+          fi
+          unzip -q "$ZIP" -d project
+
+      - name: Build Fabric mod
+        run: |
+          WRAPPER=$(find project -name gradlew -type f | head -n 1)
+          if [ -z "$WRAPPER" ]; then
+            echo "Gradle wrapper not found!"
+            exit 1
+          fi
+          chmod +x "$WRAPPER"
+          cd "$(dirname "$WRAPPER")"
+          ./gradlew build
+
+      - name: Upload mod JAR
+        uses: actions/upload-artifact@v4
+        with:
+          name: AI-SMP-Mod
+          path: project/**/build/libs/*.jar
+          
